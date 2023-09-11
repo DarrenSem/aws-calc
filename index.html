@@ -1,0 +1,226 @@
+<!DOCTYPE html><html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Math Power! Calculator using external AWS Lambda function and AWS API Gateway</title>
+
+<style type="text/css">
+
+input, select, button, #useAWSLambdaLabel {
+  /* margin-left: 5px; */
+  /* margin-right: 5px; */
+  /* padding: 5px; */
+  /* border-radius: 5px; */
+  margin-left: 0.3rem;
+  margin-right: 0.3rem;
+  padding: 0.3rem;
+  border-radius: 0.3rem;
+}
+
+button {
+  /* width: 125px; */
+  /* height: 40px; */
+  width: 7.5rem;
+  height: 2.4rem;
+}
+
+select:hover, button:hover, #useAWSLambdaLabel:hover {
+  background-color: blue;
+  color: white;
+}
+
+button:focus {
+  background-color: darkgreen;
+  color: white;
+}
+
+.form-item {
+  /* margin-bottom: 20px; */
+  margin-bottom: 1.2rem;
+}
+
+.small-input {
+    /* max-width: 60px; */
+    max-width: 3.6rem;
+}
+
+#result {
+    /* max-width: 80px; */
+    max-width: 4.8rem;
+}
+
+.inline-elements {
+    display: flex;
+    align-items: center;
+}
+
+.inline-elements > label {
+  line-height: 1.5;
+  text-align: right;
+  padding-right: 1.2rem !important;
+}
+
+#httpMethod {
+  /* margin-left: 5px; */
+  margin-left: 0.3rem;
+}
+
+.log-entry {
+  /* margin-bottom: 10px; */
+  margin-bottom: 0.6rem;
+}
+
+</style>
+
+<script type="text/javascript">
+
+window.addEventListener( "DOMContentLoaded", () => {
+
+  const calculateButton = document.getElementById("calculate");
+  const num1Input = document.getElementById("num1");
+  const num2Input = document.getElementById("num2");
+  const operatorSelect = document.getElementById("operator");
+  const resultInput = document.getElementById("result");
+  const useAWSLambdaCheckbox = document.getElementById("useAWSLambda");
+  const httpMethodSelect = document.getElementById("httpMethod");
+  const logDiv = document.getElementById("log");
+
+  const calculate = (num1, operator, num2) => {
+
+    num1 = parseFloat(num1); // because +v or Number(v) both return 0 instead of NaN...
+    num2 = parseFloat(num2); // ...when v = null or [] or " ".
+
+    switch (operator) {
+      case "plus":
+        return num1 + num2;
+      case "minus":
+        return num1 - num2;
+      case "times":
+        return num1 * num2;
+      case "divided by":
+        return num1 / num2;
+      case "to the power of":
+        return Math.pow(num1, num2);
+      default:
+        return "[noop]";  // TODO: return an object with the error details the same way the API call would.
+    };
+  };
+
+  const now = dt => (dt = new Date(dt ?? new Date), dt.toLocaleTimeString() + " " + dt.toDateString());
+
+  const logResults = (logValues, descending) => {
+    const logLine = [];
+    for (let value of logValues) {
+      logLine.push(String(value) + (logLine.length ? "" : ":"));
+    };
+
+    const logEntry = document.createElement("div");
+    logEntry.classList.add("log-entry");
+    logEntry.textContent = logLine.join(" ");
+
+    descending ? logDiv.insertAdjacentElement("afterbegin", logEntry) : logDiv.appendChild(logEntry);
+  };
+
+  const handleCalculateClick = () => {
+
+    let num1 = num1Input.value.trim();
+    let num2 = num2Input.value.trim();
+    const operator = operatorSelect.value;
+    const useAWSLambda = useAWSLambdaCheckbox.checked;
+    const httpMethod = httpMethodSelect.value;
+
+    let result = calculate(num1.length ? num1 : num1 = undefined, operator, num2.length ? num2 : num2 = undefined);
+
+    logResults([
+      now(),
+      `[${useAWSLambda ? httpMethod.toUpperCase().replace(/[[\]]/g, "") : "internal"}]`,
+      num1,
+      operator,
+      num2,
+      "= " + result
+    ]);
+
+    resultInput.value = result;
+    resultInput.select();
+
+  };
+
+  const focusOnCalculateButton = () => {
+    calculateButton.focus();
+  };
+
+  calculateButton.addEventListener("click", handleCalculateClick);
+  useAWSLambdaCheckbox.addEventListener("change", focusOnCalculateButton);
+
+} );
+
+// To make the AWS aspect work:
+// 1. Setup an AWS Lambda function that implements the mathematical operations.
+// 2. Test the function and ensure that it is working correctly.
+// 3. Setup an AWS API Gateway.
+// 4. Connect the API gateway to your AWS Lambda function.
+//   5. Modify the above Javascript code to make HTTP(S) request to the API gateway instead of doing the calculation on client side when the checkbox is checked.
+// 6. You could use `fetch` API in JavaScript for making HTTP(S) requests.
+// 7. Make sure the API gateway is correctly configured to accept the methods(get, post etc) that you are going to use.
+// 8. Implement error handling in your JavaScript code to deal with possible error responses from the API.
+// 9. Test the web app ensuring both local and AWS computations work as expected.
+// 10. Deploy your web app.
+
+</script>
+
+</head>
+
+<body>
+
+<h1>Math Power! Calculator using external AWS Lambda function and AWS API Gateway</h1>
+
+<div id="app">
+
+  <div class="form-item">
+
+    <input autofocus type="number" id="num1" class="small-input">
+
+    <select id="operator">
+      <option value="[choose operator]">[choose operator]</option>
+      <option value="plus">plus</option>
+      <option value="minus">minus</option>
+      <option value="times">times</option>
+      <option value="divided by">divided by</option>
+      <option value="to the power of">to the power of</option>
+    </select>
+
+    <input type="number" id="num2" class="small-input">
+
+  </div>
+
+  <div class="form-item">
+    <button type="button" id="calculate">Calculate</button>
+    <input type="text" id="result" readonly>
+  </div>
+
+  <div class="form-item inline-elements">
+    <label id="useAWSLambdaLabel">
+    <input type="checkbox" id="useAWSLambda">
+    <!-- <label for="useAWSLambda" id="useAWSLambdaLabel"> -->
+      Use external function<br />
+      from AWS Lambda<br />
+      via AWS API Gateway
+    </label>
+    <select id="httpMethod">
+      <option value="[choose method]">[choose method]</option>
+      <option value="options">OPTIONS</option>
+      <option value="get" selected>GET</option>
+      <option value="post">POST</option>
+      <option value="put">PUT</option>
+      <option value="patch">PATCH</option>
+      <option value="delete">DELETE</option>
+      <option value="foobar">FOOBAR</option>
+    </select>
+  </div>
+
+  <div id="log" contenteditable=""></div>
+
+</div>
+
+</body></html>
