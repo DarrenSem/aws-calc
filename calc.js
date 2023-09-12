@@ -49,17 +49,9 @@ const calculateFromApi = async (num1, operator, num2, methodAWS) => {
   const options = {
     method: method,
     body: body ?? UNDEF,
-    // bodyX: {
-    //   httpMethod: method,
-    //   queryStringParameters: qs ?? UNDEF,
-    //   body: body ?? UNDEF,
-    // },
-    // headersX: {
-    //   "content-type": "application/json"
-    // },
   };
 
-  const result = await fetch(url, options)
+  const calculated = await fetch(url, options)
   .then(response => {
     // debugger;
     const { status: statusCode, headers, statusText } = response;
@@ -85,8 +77,8 @@ const calculateFromApi = async (num1, operator, num2, methodAWS) => {
     throw err;
   });
 
-  debugger;
-  return result;
+  // debugger;
+  return calculated;
 };
 
 const test = test_event => {

@@ -35,6 +35,10 @@ button:focus {
   color: white;
 }
 
+button:hover {
+  cursor: pointer;
+}
+
 .form-item {
   /* margin-bottom: 20px; */
   margin-bottom: 1.2rem;
@@ -79,11 +83,11 @@ button:focus {
 
 <script type="text/javascript">
 
-debugger;
+// debugger;
 
 window.addEventListener( "DOMContentLoaded", () => {
 
-  debugger;
+  // debugger;
 
   const calculateButton = document.getElementById("calculate");
   const num1Input = document.getElementById("num1");
@@ -116,10 +120,24 @@ window.addEventListener( "DOMContentLoaded", () => {
   };
 
   const calculate = async (num1, operator, num2, fromApi, httpMethod) => {
-    debugger;
+    // debugger;
     const calc = fromApi ? calculateFromApi : calculateInternal;
-    const result = await calc(num1, operator, num2, httpMethod);
-    return result;
+
+    try {
+      const calculated = await calc(num1, operator, num2, httpMethod);
+
+      const returned = fromApi
+        ? parseFloat(calculated) // resultInput.value = parseFloat(result); // instead of +v or Number(v) -- both return 0 instead of NaN when v = null or [] or " ".
+        : calculated;
+      // debugger;
+
+      return returned;
+    } catch(e) {
+      // debugger;
+      // return e.stack || e.message;
+      return e.message;
+    };
+
   };
 
   const now = dt => (dt = new Date(dt ?? new Date), dt.toLocaleTimeString() + " " + dt.toDateString());
@@ -145,7 +163,7 @@ window.addEventListener( "DOMContentLoaded", () => {
     const useAWSLambda = useAWSLambdaCheckbox.checked;
     const httpMethod = httpMethodSelect.value;
 
-    debugger;
+    // debugger;
 
     let values = [
       num1.length ? num1 : num1 = undefined,
@@ -155,7 +173,7 @@ window.addEventListener( "DOMContentLoaded", () => {
 
     let result = await calculate(...values, useAWSLambda, httpMethod);
 
-    debugger;
+    // debugger;
 
     logResults([
       now(),
