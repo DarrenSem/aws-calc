@@ -2,78 +2,6 @@
 
 "use strict";
 
-/*
-
-// need ALL 3 (and also update API Gateway to say "CORS ENABLED" which creates a separate OPTIONS method!)
-// headers: { "Access-Control-Allow-Origin": "*" },  // AHA! CORS was failing at every other host
-headers: {
-  // AHA! CORS was failing at every other host
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Credentials": true,
-  "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
-},
-
-const paramsFromObject = o => (
-  o == null
-  ? ""
-  : typeof URLSearchParams === "function"
-  ? new URLSearchParams(o).toString()
-  : require('querystring').stringify(o)
-);
-
-// OK:
-fetch("https://njr8tents5.execute-api.us-west-2.amazonaws.com/api/calc?num1=5", {method: "GET", body: JSON.stringify({abc:123})})
-.then(response => { console.log(response); return response.text() })
-.then(text => { console.log(text); return text })
-
-// OK:
-fetch("https://njr8tents5.execute-api.us-west-2.amazonaws.com/api/calc?num1=5", {method: "GET"})
-.then(response => { console.log(response); return response.text() })
-.then(text => { console.log(text); return text })
-
-// OK:
-fetch("https://njr8tents5.execute-api.us-west-2.amazonaws.com/api/calc?num1=5", {method: "GET"})
-.then(response => { console.log(response); return response.text() })
-.then(text => { console.log(text); return text })
-
-// Uncaught (in promise) TypeError: Failed to execute 'fetch' on 'Window': Request with GET/HEAD method cannot have body.
-fetch("https://njr8tents5.execute-api.us-west-2.amazonaws.com/api/calc?num1=5", {method: "GET", body: JSON.stringify({abc:123})})
-.then(response => { console.log(response); return response.text() })
-.then(text => { console.log(text); return text })
-
-
-*/
-
-
-/*
-var url = "https://njr8tents5.execute-api.us-west-2.amazonaws.com/api/calc"
-
-var options = {
-
-  "method": "GET",
-
-  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*" + "/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-
-  "Accept-Encoding": "gzip, deflate, br",
-
-  "Accept-Language": "en-US,en;q=0.9",
-
-  "Upgrade-Insecure-Requests": "1",
-
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
-
-}
-
-var p = fetch(url, options);
-
-^ NOPE! STILL FAILING
-
-But, GUESS WHAT!? It's because I was only missing a single CORS header LOL:
-headers: { "Access-Control-Allow-Origin": "*" }
-^ see also "CORS enabling in AWS Lambda -- in API Gateway (proxy) too, because otherwise OPTIONS preflight will fail!.md"
-
-*/
-
 const str = (v, isJson) => {
   if(v != null) {
     return (
@@ -97,9 +25,7 @@ const str_opposite = (v, stringNotJson) => {
 const handler_testing_CORS = async (event, context) => {
 
   const response = {
-    // headers: { "Access-Control-Allow-Origin": "*" },  // AHA! CORS was failing at every other host
     headers: {
-      // AHA! CORS was failing at every other host
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Credentials": true,
       "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
@@ -190,7 +116,7 @@ const calculate = (num1, operator, num2) => {
     case "to the power of":
       return Math.pow(num1, num2);
     default:
-      return "[noop]";  // TODO: return an object with the error details the same way the API call would.
+      return "[noop]";
   };
 };
 
@@ -259,7 +185,6 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
       if(invalid) {
         [statusCode, statusText, error, details] = badRequest(data, jsonMissing ? UNDEF : `Unrecognized Operator: ${operator}`);
       } else {
-        // perform GET action based on json
         [statusCode, statusText, headers, body, details] = okRequest(
           num1, operator, num2, result, headers, method, contentType
         );
@@ -270,7 +195,6 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
       if(invalid) {
         [statusCode, statusText, error, details] = badRequest(data, jsonMissing ? UNDEF : `Unrecognized Operator: ${operator}`);
       } else {
-        // perform POST action based on json
         [statusCode, statusText, headers, body, details] = okRequest(
           num1, operator, num2, result, headers, method, contentType
           , "201", "Created"
@@ -282,7 +206,6 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
       if(invalid) {
         [statusCode, statusText, error, details] = badRequest(data, jsonMissing ? UNDEF : `Unrecognized Operator: ${operator}`);
       } else {
-        // perform PUT action based on json
         [statusCode, statusText, headers, body, details] = okRequest(
           num1, operator, num2, result, headers, method, contentType
         );
@@ -293,7 +216,6 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
       if(invalid) {
         [statusCode, statusText, error, details] = badRequest(data, jsonMissing ? UNDEF : `Unrecognized Operator: ${operator}`);
       } else {
-        // perform PATCH action based on json
         [statusCode, statusText, headers, body, details] = okRequest(
           num1, operator, num2, result, headers, method, contentType
         );
@@ -304,7 +226,6 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
       if(invalid) {
         [statusCode, statusText, error, details] = badRequest(data, jsonMissing ? UNDEF : `Unrecognized Operator: ${operator}`);
       } else {
-        // perform DELETE action based on json
         [statusCode, statusText] = [204, "No Content"];
         details = json;
       };
