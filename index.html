@@ -73,9 +73,17 @@ button:focus {
 
 </style>
 
+<script defer type="text/javascript" src="./getUrlForApi.js"></script>
+
+<script defer type="text/javascript" src="./calc.js"></script>
+
 <script type="text/javascript">
 
+debugger;
+
 window.addEventListener( "DOMContentLoaded", () => {
+
+  debugger;
 
   const calculateButton = document.getElementById("calculate");
   const num1Input = document.getElementById("num1");
@@ -86,7 +94,7 @@ window.addEventListener( "DOMContentLoaded", () => {
   const httpMethodSelect = document.getElementById("httpMethod");
   const logDiv = document.getElementById("log");
 
-  const calculate = (num1, operator, num2) => {
+  const calculateInternal = (num1, operator, num2) => {
 
     num1 = parseFloat(num1); // because +v or Number(v) both return 0 instead of NaN...
     num2 = parseFloat(num2); // ...when v = null or [] or " ".
@@ -107,6 +115,13 @@ window.addEventListener( "DOMContentLoaded", () => {
     };
   };
 
+  const calculate = async (num1, operator, num2, fromApi, httpMethod) => {
+    debugger;
+    const calc = fromApi ? calculateFromApi : calculateInternal;
+    const result = await calc(num1, operator, num2, httpMethod);
+    return result;
+  };
+
   const now = dt => (dt = new Date(dt ?? new Date), dt.toLocaleTimeString() + " " + dt.toDateString());
 
   const logResults = (logValues, descending) => {
@@ -122,7 +137,7 @@ window.addEventListener( "DOMContentLoaded", () => {
     descending ? logDiv.insertAdjacentElement("afterbegin", logEntry) : logDiv.appendChild(logEntry);
   };
 
-  const handleCalculateClick = () => {
+  const handleCalculateClick = async () => {
 
     let num1 = num1Input.value.trim();
     let num2 = num2Input.value.trim();
@@ -130,7 +145,17 @@ window.addEventListener( "DOMContentLoaded", () => {
     const useAWSLambda = useAWSLambdaCheckbox.checked;
     const httpMethod = httpMethodSelect.value;
 
-    let result = calculate(num1.length ? num1 : num1 = undefined, operator, num2.length ? num2 : num2 = undefined);
+    debugger;
+
+    let values = [
+      num1.length ? num1 : num1 = undefined,
+      operator,
+      num2.length ?num2: num2 = undefined
+    ];
+
+    let result = await calculate(...values, useAWSLambda, httpMethod);
+
+    debugger;
 
     logResults([
       now(),
@@ -154,18 +179,6 @@ window.addEventListener( "DOMContentLoaded", () => {
   useAWSLambdaCheckbox.addEventListener("change", focusOnCalculateButton);
 
 } );
-
-// To make the AWS aspect work:
-// 1. Setup an AWS Lambda function that implements the mathematical operations.
-// 2. Test the function and ensure that it is working correctly.
-// 3. Setup an AWS API Gateway.
-// 4. Connect the API gateway to your AWS Lambda function.
-//   5. Modify the above Javascript code to make HTTP(S) request to the API gateway instead of doing the calculation on client side when the checkbox is checked.
-// 6. You could use `fetch` API in JavaScript for making HTTP(S) requests.
-// 7. Make sure the API gateway is correctly configured to accept the methods(get, post etc) that you are going to use.
-// 8. Implement error handling in your JavaScript code to deal with possible error responses from the API.
-// 9. Test the web app ensuring both local and AWS computations work as expected.
-// 10. Deploy your web app.
 
 </script>
 
@@ -209,13 +222,11 @@ window.addEventListener( "DOMContentLoaded", () => {
     </label>
     <select id="httpMethod">
       <option value="[choose method]">[choose method]</option>
-      <option value="options">OPTIONS</option>
       <option value="get" selected>GET</option>
       <option value="post">POST</option>
       <option value="put">PUT</option>
       <option value="patch">PATCH</option>
       <option value="delete">DELETE</option>
-      <option value="foobar">FOOBAR</option>
     </select>
   </div>
 
