@@ -8,10 +8,6 @@
 <style type="text/css">
 
 input, select, button, #useAWSLambdaLabel {
-  /* margin-left: 5px; */
-  /* margin-right: 5px; */
-  /* padding: 5px; */
-  /* border-radius: 5px; */
   margin-left: 0.3rem;
   margin-right: 0.3rem;
   padding: 0.3rem;
@@ -19,8 +15,6 @@ input, select, button, #useAWSLambdaLabel {
 }
 
 button {
-  /* width: 125px; */
-  /* height: 40px; */
   width: 7.5rem;
   height: 2.4rem;
 }
@@ -40,17 +34,14 @@ button:hover {
 }
 
 .form-item {
-  /* margin-bottom: 20px; */
   margin-bottom: 1.2rem;
 }
 
 .small-input {
-    /* max-width: 60px; */
     max-width: 3.6rem;
 }
 
 #result {
-    /* max-width: 80px; */
     max-width: 4.8rem;
 }
 
@@ -66,12 +57,10 @@ button:hover {
 }
 
 #httpMethod {
-  /* margin-left: 5px; */
   margin-left: 0.3rem;
 }
 
 .log-entry {
-  /* margin-bottom: 10px; */
   margin-bottom: 0.6rem;
 }
 
@@ -83,11 +72,7 @@ button:hover {
 
 <script type="text/javascript">
 
-// debugger;
-
 window.addEventListener( "DOMContentLoaded", () => {
-
-  // debugger;
 
   const calculateButton = document.getElementById("calculate");
   const num1Input = document.getElementById("num1");
@@ -115,26 +100,23 @@ window.addEventListener( "DOMContentLoaded", () => {
       case "to the power of":
         return Math.pow(num1, num2);
       default:
-        return "[noop]";  // TODO: return an object with the error details the same way the API call would.
+        return "[noop]";
     };
   };
 
   const calculate = async (num1, operator, num2, fromApi, httpMethod) => {
-    // debugger;
+
     const calc = fromApi ? calculateFromApi : calculateInternal;
 
     try {
       const calculated = await calc(num1, operator, num2, httpMethod);
 
       const returned = fromApi
-        ? parseFloat(calculated) // resultInput.value = parseFloat(result); // instead of +v or Number(v) -- both return 0 instead of NaN when v = null or [] or " ".
+        ? parseFloat(calculated) // instead of +v or Number(v) -- both return 0 instead of NaN when v = null or [] or " ".
         : calculated;
-      // debugger;
 
       return returned;
     } catch(e) {
-      // debugger;
-      // return e.stack || e.message;
       return e.message;
     };
 
@@ -163,8 +145,6 @@ window.addEventListener( "DOMContentLoaded", () => {
     const useAWSLambda = useAWSLambdaCheckbox.checked;
     const httpMethod = httpMethodSelect.value;
 
-    // debugger;
-
     let values = [
       num1.length ? num1 : num1 = undefined,
       operator,
@@ -172,8 +152,6 @@ window.addEventListener( "DOMContentLoaded", () => {
     ];
 
     let result = await calculate(...values, useAWSLambda, httpMethod);
-
-    // debugger;
 
     logResults([
       now(),
@@ -233,7 +211,6 @@ window.addEventListener( "DOMContentLoaded", () => {
   <div class="form-item inline-elements">
     <label id="useAWSLambdaLabel">
     <input type="checkbox" id="useAWSLambda">
-    <!-- <label for="useAWSLambda" id="useAWSLambdaLabel"> -->
       Use external function<br />
       from AWS Lambda<br />
       via AWS API Gateway
