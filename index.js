@@ -3,10 +3,9 @@
 "use strict";
 
 const CORS_ALLOWED_ORIGINS = [
-  "https://darrensem.github.iO",
-  // "https://jsOnplacehOlder.com",
-  // "https://foobar.example.com",
-  // "https://chriszarate.github.io"
+  // "https://jsonplaceholder.typicode.com/",
+  // "https://EXAMPLE.com/", // secure only, and ROOT only (includes NEITHER http://www.example.com NOR https://www.example.com)
+  "https://darrensem.GitHub.io"
 ];
 
 const getOrigin = reqHeaders => {
@@ -15,28 +14,22 @@ const getOrigin = reqHeaders => {
   const origin = reqHeaders.origin ?? reqHeaders.Origin;
   const referer = reqHeaders.referer ?? reqHeaders.Referer;
 
-  // const result = "https://fizzbuzz.example.com";
-  // const result = "https://jsonplaCeholder.com";
-  // const result = "https://disallowed.github.io";
-  // const result = "https://darrensem.github.io";
   const result = origin ?? referer ?? null;
-  debugger;
 
-  console.log("getOrigin reqHeaders:", reqHeaders);
+  // console.log("getOrigin reqHeaders:", reqHeaders);
   console.log(".origin:", origin);
   console.log(".referer:", referer);
-  console.log("origin ?? referer ?? null:", origin ?? referer ?? null);
   console.log("result:", result);
-  debugger;
   
   return result;
 };
 
+const noEndingSlashLC = v => String(v ?? "").replace(/\/+$/, "").toLowerCase();
+
 const headersCORS = (origin, listOfAllowed) => {
 
-  // debugger;
-  origin = String(origin ?? "").replace(/\/+$/, "").toLowerCase();
-  listOfAllowed = (listOfAllowed || CORS_ALLOWED_ORIGINS).map(el => String(el).toLowerCase());
+  origin = noEndingSlashLC(origin);
+  listOfAllowed = (listOfAllowed || CORS_ALLOWED_ORIGINS).map(noEndingSlashLC);
 
   const allowedOrNull = listOfAllowed.includes(origin)
   ? origin
@@ -53,32 +46,8 @@ const headersCORS = (origin, listOfAllowed) => {
   console.log("listOfAllowed:", listOfAllowed);
   console.log("allowedOrNull:", allowedOrNull);
   console.log("headersCORS:", result);
-  // debugger;
 
   return result;
-};
-
-const headersCORS_single = () => {
-  return   {
-    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-    "Access-Control-Allow-Methods": "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT",
-    "Access-Control-Allow-Origin": "https://darrensem.github.io",
-    // "Access-Control-Allow-Origin": null,
-    // "Access-Control-Allow-Origin": "*",
-    // "Access-Control-Allow-Origin": "https://example.com https://darrensem.github.io", // multiple is NOT supported, NOT valid ***
-    "Access-Control-Allow-Credentials": true
-  };
-  // *** only a SINGLE exact value or null or "*" -- not possible for HEADERS to automatically accept MULTIPLE hosts/domains/origins:
-  // https://stackoverflow.com/questions/1653308/access-control-allow-origin-multiple-origin-domains/28552592#28552592
-  // instead would have to handle it on the SERVER -- for example: ```CSharp
-  //   string allowedDomains = "http://xxx.yyy.example|http://aaa.bbb.example";
-  //   if(allowedDomains.IndexOf(HttpContext.Current.Request.Headers["Origin"]) > -1) {
-  //     HttpContext.Current.Response.AddHeader("Access-Control-Allow-Origin", HttpContext.Current.Request.Headers["Origin"]);
-  //   }; ```
-  // cf. https://fetch.spec.whatwg.org/#http-access-control-allow-origin
-  // ^ "response can be shared = returning theliteral value of the `Origin` request header (which can be `null`) or `*` in a response"
-  // https://fetch.spec.whatwg.org/#http-new-header-syntax
-  // ^ "Access-Control-Allow-Origin      = origin-or-null / wildcard ('*')"
 };
 
 const str = (v, isJson) => {
@@ -104,7 +73,6 @@ const str_opposite = (v, stringNotJson) => {
 const handler_testing_CORS = async (event, context) => {
 
   const response = {
-    // headers: headersCORS("https://fizzbuzz.example.com"),
     headers: headersCORS( CORS_ALLOWED_ORIGINS[0] ),
     statusCode: 200,
     body: str({
@@ -112,7 +80,6 @@ const handler_testing_CORS = async (event, context) => {
     }, true)
   };
   console.log(response);
-  debugger;
 
   return response;
 
@@ -121,7 +88,6 @@ const handler_testing_CORS = async (event, context) => {
 const handler = async (event, context) => {
 
   console.log("event:", event);
-  debugger;
 
   const {
     httpMethod: method,
@@ -133,7 +99,6 @@ const handler = async (event, context) => {
   console.log("request headers:", headers);
   console.log("request queryStringParameters:", qs);
   console.log("request body:", body);
-  debugger;
 
   const methodAcceptsQSonly = /^GET$/i;
   const methodAcceptsBodyIfNullQS = /^DELETE/i;
@@ -148,11 +113,9 @@ const handler = async (event, context) => {
   console.log("methodAcceptsQSonly:", methodAcceptsQSonly);
   console.log("methodAcceptsBodyIfNullQS:", methodAcceptsBodyIfNullQS);
   console.log("data from qs/body:", data);
-  debugger;
   
   const response = buildResponse(method, data, qs, body, headers, event);
   console.log("response:", response);
-  debugger;
 
   return response;
 
@@ -162,15 +125,12 @@ const parseJSON = (data = null, returnDataIfInvalid) => {
   try {
     if(typeof data === "object") {
       console.log("parseJSON -- data:", data);
-      debugger;
       return data;
     };
     console.log("parseJSON -- JSON.parse(data):", JSON.parse(data));
-    debugger;
     return JSON.parse(data);
   } catch (e) {
     console.log("parseJSON -- returnDataIfInvalid:", returnDataIfInvalid, "data:", data);
-    debugger;
     return returnDataIfInvalid ? data : null;
   };
 };
@@ -216,7 +176,6 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
 
   const requestOrigin = getOrigin(reqHeaders);
   console.log(`buildResponse requestOrigin:`, requestOrigin);
-  debugger;
 
   // let statusCode = 200, statusText = "OK", error, details = UNDEF, body = UNDEF, contentType = UNDEF;
   let statusCode, statusText, error, details, body, contentType;
@@ -224,7 +183,6 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
 
   const json = parseJSON(data, !"returnDataIfInvalid");
   console.log(`json from parseJSON(data, !"returnDataIfInvalid"):`, json);
-  debugger;
 
   const {
     num1,
@@ -234,11 +192,9 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
   console.log("num1:", num1);
   console.log("operator:", operator);
   console.log("num2:", num2);
-  debugger;
 
   const result = calculate(num1, operator, num2);
   console.log("calculated result:", result);
-  debugger;
 
   const jsonMissing = json == null;
   const invalid = jsonMissing || typeof result !== "number";
@@ -342,7 +298,6 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
   console.log("error:", error);
   console.log("details:", details);
   console.log("returned response body:", response.body);
-  debugger;
 
   return response;
   
