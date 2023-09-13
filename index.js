@@ -2,6 +2,45 @@
 
 "use strict";
 
+const headersCORS_single = () => {
+  return   {
+    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+    "Access-Control-Allow-Methods": "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT",
+    "Access-Control-Allow-Origin": "https://darrensem.github.io",
+    // "Access-Control-Allow-Origin": null,
+    // "Access-Control-Allow-Origin": "*",
+    // "Access-Control-Allow-Origin": "https://example.com https://darrensem.github.io", // multiple is NOT supported, NOT valid ***
+    "Access-Control-Allow-Credentials": true
+  };
+  // *** only a SINGLE exact value or null or "*" -- not possible for HEADERS to automatically accept MULTIPLE hosts/domains/origins:
+  // https://stackoverflow.com/questions/1653308/access-control-allow-origin-multiple-origin-domains/28552592#28552592
+  // instead would have to handle it on the SERVER -- for example: ```CSharp
+  //   string allowedDomains = "http://xxx.yyy.example|http://aaa.bbb.example";
+  //   if(allowedDomains.IndexOf(HttpContext.Current.Request.Headers["Origin"]) > -1) {
+  //     HttpContext.Current.Response.AddHeader("Access-Control-Allow-Origin", HttpContext.Current.Request.Headers["Origin"]);
+  //   }; ```
+  // cf. https://fetch.spec.whatwg.org/#http-access-control-allow-origin
+  // ^ "response can be shared = returning theliteral value of the `Origin` request header (which can be `null`) or `*` in a response"
+  // https://fetch.spec.whatwg.org/#http-new-header-syntax
+  // ^ "Access-Control-Allow-Origin      = origin-or-null / wildcard ('*')"
+};
+
+const headersCORS_multiple = (origin, listOfAllowed) => {
+  
+  let allowedOrNull = (listOfAllowed || ["https://foobar.example.com"]).includes(origin) ? origin : null;
+
+  return   {
+    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+    "Access-Control-Allow-Methods": "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT",
+    "Access-Control-Allow-Origin": allowedOrNull,
+    "Access-Control-Allow-Credentials": true
+  };
+  
+};
+
+const headersCORS = headersCORS_single;
+// const headersCORS = headersCORS_multiple;
+
 const str = (v, isJson) => {
   if(v != null) {
     return (
@@ -25,11 +64,7 @@ const str_opposite = (v, stringNotJson) => {
 const handler_testing_CORS = async (event, context) => {
 
   const response = {
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Credentials": true,
-      "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
-    },
+    headers: headersCORS(),
     statusCode: 200,
     body: str({
       event
@@ -144,11 +179,7 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
 
   // let statusCode = 200, statusText = "OK", error, details = UNDEF, body = UNDEF, contentType = UNDEF;
   let statusCode, statusText, error, details, body, contentType;
-  let headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Credentials": true,
-    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
-  };
+  let headers = headersCORS();
 
   const {
     num1,
