@@ -2,6 +2,62 @@
 
 "use strict";
 
+const CORS_ALLOWED_ORIGINS = [
+  "https://darrensem.github.iO",
+  // "https://jsOnplacehOlder.com",
+  // "https://foobar.example.com",
+  // "https://chriszarate.github.io"
+];
+
+const getOrigin = reqHeaders => {
+  reqHeaders ||= {};
+  
+  const origin = reqHeaders.origin ?? reqHeaders.Origin;
+  const referer = reqHeaders.referer ?? reqHeaders.Referer;
+
+  // const result = "https://fizzbuzz.example.com";
+  // const result = "https://jsonplaCeholder.com";
+  // const result = "https://disallowed.github.io";
+  // const result = "https://darrensem.github.io";
+  const result = origin ?? referer ?? null;
+  debugger;
+
+  console.log("getOrigin reqHeaders:", reqHeaders);
+  console.log(".origin:", origin);
+  console.log(".referer:", referer);
+  console.log("origin ?? referer ?? null:", origin ?? referer ?? null);
+  console.log("result:", result);
+  debugger;
+  
+  return result;
+};
+
+const headersCORS = (origin, listOfAllowed) => {
+
+  // debugger;
+  origin = String(origin ?? "").replace(/\/+$/, "").toLowerCase();
+  listOfAllowed = (listOfAllowed || CORS_ALLOWED_ORIGINS).map(el => String(el).toLowerCase());
+
+  const allowedOrNull = listOfAllowed.includes(origin)
+  ? origin
+  : null;
+
+  const result = {
+    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+    "Access-Control-Allow-Methods": "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT",
+    "Access-Control-Allow-Origin": allowedOrNull,
+    "Access-Control-Allow-Credentials": true
+  };
+
+  console.log("origin:", origin);
+  console.log("listOfAllowed:", listOfAllowed);
+  console.log("allowedOrNull:", allowedOrNull);
+  console.log("headersCORS:", result);
+  // debugger;
+
+  return result;
+};
+
 const headersCORS_single = () => {
   return   {
     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
@@ -24,22 +80,6 @@ const headersCORS_single = () => {
   // https://fetch.spec.whatwg.org/#http-new-header-syntax
   // ^ "Access-Control-Allow-Origin      = origin-or-null / wildcard ('*')"
 };
-
-const headersCORS_multiple = (origin, listOfAllowed) => {
-  
-  let allowedOrNull = (listOfAllowed || ["https://foobar.example.com"]).includes(origin) ? origin : null;
-
-  return   {
-    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-    "Access-Control-Allow-Methods": "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT",
-    "Access-Control-Allow-Origin": allowedOrNull,
-    "Access-Control-Allow-Credentials": true
-  };
-  
-};
-
-const headersCORS = headersCORS_single;
-// const headersCORS = headersCORS_multiple;
 
 const str = (v, isJson) => {
   if(v != null) {
@@ -64,7 +104,8 @@ const str_opposite = (v, stringNotJson) => {
 const handler_testing_CORS = async (event, context) => {
 
   const response = {
-    headers: headersCORS(),
+    // headers: headersCORS("https://fizzbuzz.example.com"),
+    headers: headersCORS( CORS_ALLOWED_ORIGINS[0] ),
     statusCode: 200,
     body: str({
       event
@@ -173,13 +214,17 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
 
   const UNDEF = undefined;
 
-  const json = parseJSON(data, !"returnDataIfInvalid");
-  console.log(`json from parseJSON(data, !"returnDataIfInvalid"):`, json);
+  const requestOrigin = getOrigin(reqHeaders);
+  console.log(`buildResponse requestOrigin:`, requestOrigin);
   debugger;
 
   // let statusCode = 200, statusText = "OK", error, details = UNDEF, body = UNDEF, contentType = UNDEF;
   let statusCode, statusText, error, details, body, contentType;
-  let headers = headersCORS();
+  let headers = headersCORS(requestOrigin);
+
+  const json = parseJSON(data, !"returnDataIfInvalid");
+  console.log(`json from parseJSON(data, !"returnDataIfInvalid"):`, json);
+  debugger;
 
   const {
     num1,
