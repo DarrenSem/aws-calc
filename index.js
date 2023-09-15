@@ -18,39 +18,6 @@ const AWS = require(useAWS3 ? "@aws-sdk/client-dynamodb" : "aws-sdk");
 // const handler_testing = async (event, context) => {
 const handler_test = async (event, context) => {
 
-// console.log(
-//   `\n\n>>> Object.keys(useAWS3 = ${useAWS3}) AWS SDK's non-function keys = [\n`
-//   + Object.keys(JSON.parse(JSON.stringify(AWS))).sort().join("\n")
-//   + "\n]\n"
-// );
-// >>> Object.keys(useAWS3 = true) AWS SDK's non-function keys = [
-// AnalyticsFilter
-// ChecksumAlgorithm
-// ChecksumMode
-// FileHeaderInfo
-// JSONType
-// LifecycleRuleFilter
-// MetricsFilter
-// ObjectAttributes
-// QuoteFields
-// ReplicationRuleFilter
-// RestoreRequestType
-// SelectObjectContentEventStream
-// ]
-// >>> Object.keys(useAWS3 = false) AWS SDK's non-function keys = [
-// EventListeners
-// JSON
-// Model
-// Protocol
-// Signers
-// VERSION
-// XML
-// config
-// endpointCache
-// events
-// util
-// ]
-
   const {
     body: body,
     queryStringParameters: qs
@@ -73,29 +40,38 @@ const handler_test = async (event, context) => {
       Item: {
           // SDK v3 = datatypes ('S' for String, 'N' for Number, etc.)
           'ID': useAWS3 ? { S: name } : name,
-          'LatestGreetingTime': useAWS3 ? { N: now } : now
+          'LatestGreetingTime': useAWS3 ? { S: now } : now
       }
   };
   console.log(`params ${useAWS3 ? "v3:" : "v2:"}`, params);
 
+  const region = "TODO_MY_REGION"; // SDK v3
+
   // const DynamoDBClient = new AWS.DynamoDB.DocumentClient(); // SDK v2
-  // const { DynamoDB, DynamoDBClient, PutCommand } = AWS; // DynamoDB = SDK v2; DynamoDBClient + PutCommand = SDK v3
+  const { DynamoDB, DynamoDBClient, PutCommand } = AWS; // DynamoDB = SDK v2; DynamoDBClient + PutCommand = SDK v3
+  // console.log({ DynamoDB, DynamoDBClient, PutCommand });
   // console.log("DynamoDB v2:", DynamoDB);
   // console.log("DynamoDBClient v3:", DynamoDBClient);
   // console.log("PutCommand v3:", PutCommand);
 
-  // const clientDDB = DynamoDBClient ?? new DynamoDB.DocumentClient(); // SDK v3 ?? SDK v2
+
+  const clientDDB = DynamoDBClient ?? new DynamoDB.DocumentClient(); // SDK v3 ?? SDK v2
   // console.log("clientDDB:", clientDDB);
 
 
 
-  // var result = await DynamoDBClient.put(params).promise(); // SDK v2
-  // console.log("result v2:", result);
-
-  // const region = "TODO_MY_REGION"; // SDK v3
-  // const client = new clientDDB({ region });
-  // var result = await client.send(new PutCommand(params));
-  // console.log("result v3:", result);
+  var result;
+  
+  if(useAWS3) {
+    const client = new clientDDB({ region }); // SDK v3
+    // console.log("client v3:", client);
+    result = await client.send(PutCommand(params));
+  } else {
+    AWS.config.update({ region });
+    result = await clientDDB.put(params).promise(); // SDK v2
+  };
+  console.log(`result ${useAWS3 ? "v3:" : "v2:"}`, result);
+  
 
 
 
