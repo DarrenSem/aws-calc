@@ -2,6 +2,13 @@
 
 "use strict";
 
+const DEBUG_TEST = false && true; // const handler = DEBUG_TEST ? handler_test : handler_final;
+
+// API v3 is pre-installed -- instead of v2 -- if Node.js 18.x+ [Edit "Runtime settings"]
+// via https://stackoverflow.com/questions/74792293/aws-lambda-cannot-find-module-aws-sdk-in-build-a-basic-web-application-tutoria/74792625#74792625
+const useAWS3 = process?.version >= "v18";
+const AWS = require(useAWS3 ? "@aws-sdk/client-s3" : "aws-sdk");
+
 const CORS_ALLOWED_ORIGINS = [
   // "https://jsonplaceholder.typicode.com/",
   // "https://EXAMPLE.com/", // secure only, and ROOT only (includes NEITHER http://www.example.com NOR https://www.example.com)
@@ -70,7 +77,41 @@ const str_opposite = (v, stringNotJson) => {
   };
 };
 
-const handler_testing_CORS = async (event, context) => {
+// const handler_testing = async (event, context) => {
+const handler_test = async (event, context) => {
+
+  console.log(
+    `\n\n>>> Object.keys(useAWS3 = ${useAWS3}) API's non-function keys = [\n`
+    + Object.keys(JSON.parse(JSON.stringify(AWS))).sort().join("\n")
+    + "\n]\n"
+  );
+// >>> Object.keys(useAWS3 = true) API's non-function keys = [
+// AnalyticsFilter
+// ChecksumAlgorithm
+// ChecksumMode
+// FileHeaderInfo
+// JSONType
+// LifecycleRuleFilter
+// MetricsFilter
+// ObjectAttributes
+// QuoteFields
+// ReplicationRuleFilter
+// RestoreRequestType
+// SelectObjectContentEventStream
+// ]
+// >>> Object.keys(useAWS3 = false) API's non-function keys = [
+// EventListeners
+// JSON
+// Model
+// Protocol
+// Signers
+// VERSION
+// XML
+// config
+// endpointCache
+// events
+// util
+// ]
 
   const response = {
     headers: headersCORS( CORS_ALLOWED_ORIGINS[0] ),
@@ -85,7 +126,7 @@ const handler_testing_CORS = async (event, context) => {
 
 };
 
-const handler = async (event, context) => {
+const handler_final = async (event, context) => {
 
   console.log("event:", event);
 
@@ -120,6 +161,8 @@ const handler = async (event, context) => {
   return response;
 
 };
+
+const handler = DEBUG_TEST ? handler_test : handler_final;
 
 const parseJSON = (data = null, returnDataIfInvalid) => {
   try {
