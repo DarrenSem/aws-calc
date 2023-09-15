@@ -2,7 +2,7 @@
 
 "use strict";
 
-const DEBUG_TEST = false && true; // const handler = DEBUG_TEST ? handler_test : handler_final;
+const DEBUG_TEST = false || true; // const handler = DEBUG_TEST ? handler_test : handler_final;
 
 const CORS_ALLOWED_ORIGINS = [
   // "https://jsonplaceholder.typicode.com/",
@@ -10,20 +10,20 @@ const CORS_ALLOWED_ORIGINS = [
   "https://darrensem.GitHub.io"
 ];
 
-// API v3 is pre-installed -- instead of v2 -- if Node.js 18.x+ [Edit "Runtime settings"]
+// AWS SDK v3 is pre-installed -- instead of v2 -- if Node.js 18.x+ [Edit "Runtime settings"]
 // via https://stackoverflow.com/questions/74792293/aws-lambda-cannot-find-module-aws-sdk-in-build-a-basic-web-application-tutoria/74792625#74792625
 const useAWS3 = process?.version >= "v18";
-const AWS = require(useAWS3 ? "@aws-sdk/client-s3" : "aws-sdk");
+const AWS = require(useAWS3 ? "@aws-sdk/client-dynamodb" : "aws-sdk");
 
 // const handler_testing = async (event, context) => {
 const handler_test = async (event, context) => {
 
-  console.log(
-    `\n\n>>> Object.keys(useAWS3 = ${useAWS3}) API's non-function keys = [\n`
-    + Object.keys(JSON.parse(JSON.stringify(AWS))).sort().join("\n")
-    + "\n]\n"
-  );
-// >>> Object.keys(useAWS3 = true) API's non-function keys = [
+// console.log(
+//   `\n\n>>> Object.keys(useAWS3 = ${useAWS3}) AWS SDK's non-function keys = [\n`
+//   + Object.keys(JSON.parse(JSON.stringify(AWS))).sort().join("\n")
+//   + "\n]\n"
+// );
+// >>> Object.keys(useAWS3 = true) AWS SDK's non-function keys = [
 // AnalyticsFilter
 // ChecksumAlgorithm
 // ChecksumMode
@@ -37,7 +37,7 @@ const handler_test = async (event, context) => {
 // RestoreRequestType
 // SelectObjectContentEventStream
 // ]
-// >>> Object.keys(useAWS3 = false) API's non-function keys = [
+// >>> Object.keys(useAWS3 = false) AWS SDK's non-function keys = [
 // EventListeners
 // JSON
 // Model
@@ -51,14 +51,64 @@ const handler_test = async (event, context) => {
 // util
 // ]
 
+  const {
+    body: body,
+    queryStringParameters: qs
+  } = {...event};
+  console.log("request body:", body);
+  console.log("request queryStringParameters:", qs);
+
+  const {first, second} = {...(body ?? qs)};
+  console.log("first:", first);
+  console.log("second:", second);
+  
+  let name = JSON.stringify(`Hello from Lambda, ${`${first ?? ""} ${second ?? ""}`.trim()}.`);
+  console.log("name:", name);
+  
+  const now = new Date().toISOString();
+  console.log("now:", now);
+
+  const params = {
+      TableName:'HelloWorldDatabase',
+      Item: {
+          // SDK v3 = datatypes ('S' for String, 'N' for Number, etc.)
+          'ID': useAWS3 ? { S: name } : name,
+          'LatestGreetingTime': useAWS3 ? { N: now } : now
+      }
+  };
+  console.log(`params ${useAWS3 ? "v3:" : "v2:"}`, params);
+
+  // const DynamoDBClient = new AWS.DynamoDB.DocumentClient(); // SDK v2
+  // const { DynamoDB, DynamoDBClient, PutCommand } = AWS; // DynamoDB = SDK v2; DynamoDBClient + PutCommand = SDK v3
+  // console.log("DynamoDB v2:", DynamoDB);
+  // console.log("DynamoDBClient v3:", DynamoDBClient);
+  // console.log("PutCommand v3:", PutCommand);
+
+  // const clientDDB = DynamoDBClient ?? new DynamoDB.DocumentClient(); // SDK v3 ?? SDK v2
+  // console.log("clientDDB:", clientDDB);
+
+
+
+  // var result = await DynamoDBClient.put(params).promise(); // SDK v2
+  // console.log("result v2:", result);
+
+  // const region = "TODO_MY_REGION"; // SDK v3
+  // const client = new clientDDB({ region });
+  // var result = await client.send(new PutCommand(params));
+  // console.log("result v3:", result);
+
+
+
   const response = {
     headers: headersCORS( CORS_ALLOWED_ORIGINS[0] ),
     statusCode: 200,
     body: str({
-      event
+      // event,
+      name,
+      result: []
     }, true)
   };
-  console.log(response);
+  console.log("\n\n>>> FINAL response:", response);
 
   return response;
 
