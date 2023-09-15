@@ -4,78 +4,16 @@
 
 const DEBUG_TEST = false && true; // const handler = DEBUG_TEST ? handler_test : handler_final;
 
-// API v3 is pre-installed -- instead of v2 -- if Node.js 18.x+ [Edit "Runtime settings"]
-// via https://stackoverflow.com/questions/74792293/aws-lambda-cannot-find-module-aws-sdk-in-build-a-basic-web-application-tutoria/74792625#74792625
-const useAWS3 = process?.version >= "v18";
-const AWS = require(useAWS3 ? "@aws-sdk/client-s3" : "aws-sdk");
-
 const CORS_ALLOWED_ORIGINS = [
   // "https://jsonplaceholder.typicode.com/",
   // "https://EXAMPLE.com/", // secure only, and ROOT only (includes NEITHER http://www.example.com NOR https://www.example.com)
   "https://darrensem.GitHub.io"
 ];
 
-const getOrigin = reqHeaders => {
-  reqHeaders ||= {};
-  
-  const origin = reqHeaders.origin ?? reqHeaders.Origin;
-  const referer = reqHeaders.referer ?? reqHeaders.Referer;
-
-  const result = origin ?? referer ?? null;
-
-  // console.log("getOrigin reqHeaders:", reqHeaders);
-  console.log(".origin:", origin);
-  console.log(".referer:", referer);
-  console.log("result:", result);
-  
-  return result;
-};
-
-const noEndingSlashLC = v => String(v ?? "").replace(/\/+$/, "").toLowerCase();
-
-const headersCORS = (origin, listOfAllowed) => {
-
-  origin = noEndingSlashLC(origin);
-  listOfAllowed = (listOfAllowed || CORS_ALLOWED_ORIGINS).map(noEndingSlashLC);
-
-  const allowedOrNull = listOfAllowed.includes(origin)
-  ? origin
-  : null;
-
-  const result = {
-    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-    "Access-Control-Allow-Methods": "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT",
-    "Access-Control-Allow-Origin": allowedOrNull,
-    "Access-Control-Allow-Credentials": true
-  };
-
-  console.log("origin:", origin);
-  console.log("listOfAllowed:", listOfAllowed);
-  console.log("allowedOrNull:", allowedOrNull);
-  console.log("headersCORS:", result);
-
-  return result;
-};
-
-const str = (v, isJson) => {
-  if(v != null) {
-    return (
-      isJson
-      ? JSON.stringify(v, null, "\t")
-      : v // NOTE: `v` not `String(v)`
-    );
-  };
-};
-
-const str_opposite = (v, stringNotJson) => {
-  if(v != null) {
-    return (
-      stringNotJson
-      ? String(v)
-      : JSON.stringify(v, null, "\t")
-    );
-  };
-};
+// API v3 is pre-installed -- instead of v2 -- if Node.js 18.x+ [Edit "Runtime settings"]
+// via https://stackoverflow.com/questions/74792293/aws-lambda-cannot-find-module-aws-sdk-in-build-a-basic-web-application-tutoria/74792625#74792625
+const useAWS3 = process?.version >= "v18";
+const AWS = require(useAWS3 ? "@aws-sdk/client-s3" : "aws-sdk");
 
 // const handler_testing = async (event, context) => {
 const handler_test = async (event, context) => {
@@ -163,6 +101,68 @@ const handler_final = async (event, context) => {
 };
 
 const handler = DEBUG_TEST ? handler_test : handler_final;
+
+const getOrigin = reqHeaders => {
+  reqHeaders ||= {};
+  
+  const origin = reqHeaders.origin ?? reqHeaders.Origin;
+  const referer = reqHeaders.referer ?? reqHeaders.Referer;
+
+  const result = origin ?? referer ?? null;
+
+  // console.log("getOrigin reqHeaders:", reqHeaders);
+  console.log(".origin:", origin);
+  console.log(".referer:", referer);
+  console.log("result:", result);
+  
+  return result;
+};
+
+const noEndingSlashLC = v => String(v ?? "").replace(/\/+$/, "").toLowerCase();
+
+const headersCORS = (origin, listOfAllowed) => {
+
+  origin = noEndingSlashLC(origin);
+  listOfAllowed = (listOfAllowed || CORS_ALLOWED_ORIGINS).map(noEndingSlashLC);
+
+  const allowedOrNull = listOfAllowed.includes(origin)
+  ? origin
+  : null;
+
+  const result = {
+    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+    "Access-Control-Allow-Methods": "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT",
+    "Access-Control-Allow-Origin": allowedOrNull,
+    "Access-Control-Allow-Credentials": true
+  };
+
+  console.log("origin:", origin);
+  console.log("listOfAllowed:", listOfAllowed);
+  console.log("allowedOrNull:", allowedOrNull);
+  console.log("headersCORS:", result);
+
+  return result;
+};
+
+const str = (v, isJson) => {
+  if(v != null) {
+    return (
+      isJson
+      ? JSON.stringify(v, null, "\t")
+      : v // NOTE: `v` not `String(v)`
+    );
+  };
+};
+
+const str_opposite = (v, stringNotJson) => {
+  if(v != null) {
+    return (
+      stringNotJson
+      ? String(v)
+      : JSON.stringify(v, null, "\t")
+    );
+  };
+};
 
 const parseJSON = (data = null, returnDataIfInvalid) => {
   try {
