@@ -29,23 +29,24 @@ const handler_test = async (event, context) => {
   console.log("first:", first);
   console.log("second:", second);
   
-  let name = JSON.stringify(`Hello from Lambda, ${`${first ?? ""} ${second ?? ""}`.trim()}.`);
-  console.log("name:", name);
-  
+  // let name = JSON.stringify(`${`${first ?? ""} ${second ?? ""}`.trim()}.`);
+  let name = `${`${first ?? ""} ${second ?? ""}`.trim()}.`;
+  console.log(`Hello from Lambda, name=${name}`);
+
   const now = new Date().toISOString();
   console.log("now:", now);
 
   const params = {
-      TableName:'HelloWorldDatabase',
+      TableName: "math-log",
       Item: {
-          // SDK v3 = datatypes ('S' for String, 'N' for Number, etc.)
-          'ID': useAWS3 ? { S: name } : name,
-          'LatestGreetingTime': useAWS3 ? { S: now } : now
+          // SDK v3 = datatypes ("S" for String, "N" for Number, etc.)
+          "id": useAWS3 ? { S: name } : name,
+          "latest-greeting-time": useAWS3 ? { S: now } : now
       }
   };
   console.log(`params ${useAWS3 ? "v3:" : "v2:"}`, params);
 
-  const region = "TODO_MY_REGION"; // SDK v3
+  const region = "us-west-2";
 
   // const DynamoDBClient = new AWS.DynamoDB.DocumentClient(); // SDK v2
   const { DynamoDB, DynamoDBClient, PutCommand } = AWS; // DynamoDB = SDK v2; DynamoDBClient + PutCommand = SDK v3
