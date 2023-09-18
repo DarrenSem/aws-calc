@@ -2,7 +2,14 @@
 
 "use strict";
 
-const DEBUG_TEST = false || true; // const handler = DEBUG_TEST ? handler_test : handler_final;
+const DEBUG_ENV_AWS = typeof process === "object" && (
+  process.env.AWS_EXECUTION_ENV || process.env.LAMBDA_TASK_ROOT
+);
+
+const DEBUG_TEST_DYNAMODB = !!"DEBUG_TEST_DYNAMODB"; // const handler = DEBUG_TEST_DYNAMODB ? handler_test_dynamodb : handler_final
+const DEBUG_TEST_FORCE_V2 = !!"DEBUG_TEST_FORCE_V2";
+
+const AWS_CONFIG = { region: "us-west-2" };
 
 const CORS_ALLOWED_ORIGINS = [
   // "https://jsonplaceholder.typicode.com/",
@@ -12,23 +19,49 @@ const CORS_ALLOWED_ORIGINS = [
 
 // AWS SDK v3 is pre-installed -- instead of v2 -- if Node.js 18.x+ [Edit "Runtime settings"]
 // via https://stackoverflow.com/questions/74792293/aws-lambda-cannot-find-module-aws-sdk-in-build-a-basic-web-application-tutoria/74792625#74792625
-const useAWS3 = process?.version >= "v18";
-const AWS = require(useAWS3 ? "@aws-sdk/client-dynamodb" : "aws-sdk");
+const getAWS = (SDKforceV3 = typeof process === "object" && process.version >= "v18", client = "/client-dynamodb") => {
+  console.log("getAWS() client:", client, ", SDKforceV3:", SDKforceV3);
+  const returned = require(
+    SDKforceV3
+    ? `@aws-sdk${client}`
+    : "aws-sdk"
+  );
+  console.log("returned:", !!returned);
+  return returned;
+};
 
 // const handler_testing = async (event, context) => {
-const handler_test = async (event, context) => {
+const handler_test_dynamodb = async (event, context, callback, SDKforceV2) => {
+
+  // debugger;
+  console.log("SDKforceV2:", SDKforceV2, ", process.version: Node", process.version);
+  const AWS = getAWS(SDKforceV2 ? false : undefined);
+  // const AWS = require("aws-sdk");
+  // const AWS = require("@aws-sdk/client-dynamodb");
+  // return str(!!AWS, true);
+
+  // const usingAWS3 = typeof AWS.DynamoDB !== "function";
+  const usingAWS3 = !AWS.config;
+  console.log("usingAWS3:", usingAWS3);
+  console.log( "typeof AWS:", typeof AWS, {}.toString.call(AWS), AWS.constructor.name );
+  console.log( "typeof AWS.config:", typeof AWS.config, {}.toString.call(AWS.config) );
+  debugger;
+// return "TODO:";
 
   const {
+    httpMethod: method,
     body: body,
-    queryStringParameters: qs
-  } = {...event};
+    queryStringParameters: qs,
+  } = { ...event };
   console.log("request body:", body);
   console.log("request queryStringParameters:", qs);
+  // debugger;
 
-  const {first, second} = {...(body ?? qs)};
+  const { first, second } = { ...(body ?? qs) };
   console.log("first:", first);
   console.log("second:", second);
-  
+  // debugger;
+
   // let name = JSON.stringify(`${`${first ?? ""} ${second ?? ""}`.trim()}.`);
   let name = `${`${first ?? ""} ${second ?? ""}`.trim()}.`;
   console.log(`Hello from Lambda, name=${name}`);
@@ -37,58 +70,109 @@ const handler_test = async (event, context) => {
   console.log("now:", now);
 
   const params = {
-      TableName: "math-log",
-      Item: {
-          // SDK v3 = datatypes ("S" for String, "N" for Number, etc.)
-          "id": useAWS3 ? { S: name } : name,
-          "latest-greeting-time": useAWS3 ? { S: now } : now
-      }
+    TableName: "math-log",
+    Item: {
+      // SDK v3 = datatypes ("S" for String, "N" for Number, etc.)
+      id: usingAWS3 ? { S: name } : name,
+      "latest-greeting-time": usingAWS3 ? { S: now } : now,
+    },
   };
-  console.log(`params ${useAWS3 ? "v3:" : "v2:"}`, params);
+  console.log(`params ${usingAWS3 ? "v3:" : "v2:"}`, params);
 
-  const region = "us-west-2";
+  debugger;
+  // https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html
+  let configLoaded = {};
+  try {
+    configLoaded = require("./research/credentials.aws.json");
+  } catch(e) {};
+
+  const configMerged = { ...configLoaded, ...AWS_CONFIG };
+  console.log("configLoaded:", Object.keys(configLoaded));
+  console.log("AWS_CONFIG:", Object.keys(AWS_CONFIG));
+  console.log("configMerged:", Object.keys(configMerged));
+  debugger;
+
+  if(!usingAWS3) {
+    console.log( "AWS.config before:", Object.keys(AWS.config || {}) );
+    console.log( "AWS.config.credentials before:", Object.keys(AWS.config?.credentials || {}) );
+    const configReturnedNope = AWS.config?.update?.({
+      accessKeyId: configMerged?.credentials?.accessKeyId,
+      secretAccessKey: configMerged?.credentials?.secretAccessKey,
+      region: configMerged.region
+    });
+    console.log( "configReturnedNope === undefined:", configReturnedNope === undefined );
+    console.log( "AWS.config after:", Object.keys(AWS.config) );
+    console.log( "AWS.config.credentials after:", Object.keys(AWS.config.credentials || {}) );
+    // console.log(AWS.config);
+    debugger;
+
+    // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html
+    // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html#credentials-property
+    // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Credentials.html
+
+    // const configFinalV2 = new AWS.Config({
+    //  accessKeyId: configMerged.credentials.accessKeyId,
+    //  secretAccessKey: configMerged.credentials.secretAccessKey,
+    //  region: configMerged.region,
+    // });
+    // console.log("configFinalV2:", str(configFinalV2, true));
+    // AWS.config.update(configFinalV2);
+  };
+
 
   // const DynamoDBClient = new AWS.DynamoDB.DocumentClient(); // SDK v2
-  const { DynamoDB, DynamoDBClient, PutCommand } = AWS; // DynamoDB = SDK v2; DynamoDBClient + PutCommand = SDK v3
+  const { DynamoDB, DynamoDBClient, PutItemCommand } = AWS; // DynamoDB = SDK v2; DynamoDBClient + PutItemCommand = SDK v3
   // console.log({ DynamoDB, DynamoDBClient, PutCommand });
   // console.log("DynamoDB v2:", DynamoDB);
   // console.log("DynamoDBClient v3:", DynamoDBClient);
-  // console.log("PutCommand v3:", PutCommand);
-
+  console.log("PutItemCommand v3:", PutItemCommand);
 
   const clientDDB = DynamoDBClient ?? new DynamoDB.DocumentClient(); // SDK v3 ?? SDK v2
-  // console.log("clientDDB:", clientDDB);
-
-
+  console.log("clientDDB:", clientDDB);
+  debugger;
 
   var result;
-  
-  if(useAWS3) {
-    const client = new clientDDB({ region }); // SDK v3
-    // console.log("client v3:", client);
-    result = await client.send(PutCommand(params));
+
+  if (usingAWS3) {
+    // ??? https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Credentials.html#constructor-property
+    // result = { $response: { httpResponse: { body: null } } }; // TODO: temp because immediately fails...
+    const client = new clientDDB(configMerged); // SDK v3
+    console.log("client v3:", client);
+    result = await client.send(new PutItemCommand(params));
   } else {
-    AWS.config.update({ region });
     result = await clientDDB.put(params).promise(); // SDK v2
-  };
-  console.log(`result ${useAWS3 ? "v3:" : "v2:"}`, result);
-  
+    // result = await clientDDB.patch(params).promise(); // TypeError: clientDDB.patch is not a function
+    // ...so then how to do a PARTIAL update?
+    // AHA, config must run BEFORE other calls:
+    // https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/introduction/#configuration
+    // "version 2.x of the SDK... calling AWS.config.update({/* params */}) only updated configuration
+    // for service clients instantiated after the update call was made, not any existing clients."
+  }
+  console.log(`\n\n*** result v${usingAWS3 ? "3" : "2"}:`, "[[ @", now, "]]", str(result, true));  // v3:/v2:
+  debugger;
 
-
+  const responseBody = usingAWS3 ? result.$metadata : result.$response.httpResponse.body;
+  console.log("v2 sanity check:", String(responseBody) === "{}"); // .send(PutCommand, p) / .put(p)
+  console.log("v3 sanity check:", responseBody?.httpStatusCode === 200);
+  debugger;
 
   const response = {
-    headers: headersCORS( CORS_ALLOWED_ORIGINS[0] ),
+    headers: headersCORS(CORS_ALLOWED_ORIGINS[0]),
     statusCode: 200,
-    body: str({
-      // event,
-      name,
-      result: []
-    }, true)
+    body: str(
+      {
+        // event,
+        name,
+        // result: []
+        result,
+      },
+      true
+    ),
   };
   console.log("\n\n>>> FINAL response:", response);
+  // debugger;
 
   return response;
-
 };
 
 const handler_final = async (event, context) => {
@@ -127,7 +211,7 @@ const handler_final = async (event, context) => {
 
 };
 
-const handler = DEBUG_TEST ? handler_test : handler_final;
+const handler = DEBUG_TEST_DYNAMODB ? handler_test_dynamodb : handler_final;
 
 const getOrigin = reqHeaders => {
   reqHeaders ||= {};
@@ -200,7 +284,7 @@ const parseJSON = (data = null, returnDataIfInvalid) => {
     console.log("parseJSON -- JSON.parse(data):", JSON.parse(data));
     return JSON.parse(data);
   } catch (e) {
-    console.log("parseJSON -- returnDataIfInvalid:", returnDataIfInvalid, "data:", data);
+    console.log("parseJSON -- returnDataIfInvalid:", returnDataIfInvalid, ", data:", data);
     return returnDataIfInvalid ? data : null;
   };
 };
@@ -375,3 +459,24 @@ const buildResponse = (method, data, reqQS, reqBody, reqHeaders, reqEvent) => {
 
 if(typeof exports === "object") { exports.handler = handler; }; // CJS (index.js)
 // export { handler }; // ESM (index.mjs, only if index.js is not found -- even if it failed to export .handler)
+
+const test_handler_if_not_AWS = async (isAWS) => {
+  console.log("test_handler_if_not_AWS(isAWS) , isAWS =", isAWS);
+  if(isAWS) {
+    return;
+  };
+
+  const test_event = {
+    httpMethod: "POST",
+    body: {
+      first: "Chris",
+      second: "King",
+    },
+  };
+
+  const result = await handler(test_event, undefined, undefined, DEBUG_TEST_FORCE_V2);
+  console.log(result);
+  // debugger;
+
+};
+test_handler_if_not_AWS(DEBUG_ENV_AWS);
