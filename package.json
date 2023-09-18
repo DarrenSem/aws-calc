@@ -1,0 +1,36 @@
+{
+  "name": "aws-calc",
+  "version": "1.0.0",
+  "description": "Simple calculator that uses external function from AWS Lambda via AWS API Gateway",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node ./test/three-times-four.js",
+    "dev": "node ./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarrenSem/aws-calc.git"
+  },
+  "keywords": [
+    "fetch",
+    "calculator",
+    "aws-lambda",
+    "rest-api",
+    "web-application",
+    "aws-api-gateway",
+    "http-codes"
+  ],
+  "author": "Darren Semotiuk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DarrenSem/aws-calc/issues"
+  },
+  "homepage": "https://github.com/DarrenSem/aws-calc#readme",
+  "devDependencies": {
+    "aws-sdk": "^2.1459.0",
+    "@aws-sdk/client-dynamodb": "^3.415.0"
+  }
+}
